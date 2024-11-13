@@ -27,11 +27,11 @@ public class UserInputActivity extends AppCompatActivity {
         inputButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // 입력된 행과 열 가져오기
+                // Get the entered rows and columns
                 String rowText = rowInput.getText().toString();
                 String colText = colInput.getText().toString();
 
-                // 입력 값이 비어 있는지 확인
+                // Check if input values are empty
                 if (rowText.isEmpty() || colText.isEmpty()) {
                     Toast.makeText(UserInputActivity.this, "Please enter both rows and columns.", Toast.LENGTH_SHORT).show();
                     return;
@@ -40,7 +40,7 @@ public class UserInputActivity extends AppCompatActivity {
                 int rows = Integer.parseInt(rowText);
                 int cols = Integer.parseInt(colText);
 
-                // MazeActivity로 이동하며 입력값 전달
+                // Move to MazeActivity and pass input values
                 Intent intent = new Intent(UserInputActivity.this, MazeActivity.class);
                 intent.putExtra("rows", rows);
                 intent.putExtra("cols", cols);

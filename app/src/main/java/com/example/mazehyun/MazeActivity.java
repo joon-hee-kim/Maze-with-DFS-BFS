@@ -2,6 +2,7 @@ package com.example.mazehyun;
 
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -18,126 +19,141 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public class MazeActivity extends AppCompatActivity {
-    //미로
+    // Maze
     private int[][] maze;
     private int rows;
     private int cols;
 
-    private int characterRow = 1; // 시작 위치 (1, 1)
+    private int characterRow = 1; // Starting position (1, 1)
     private int characterCol = 1;
     private int exitRow;
     private int exitCol;
-    private ImageView characterImageView; //캐릭터 이미지
-    private int buttonCount = 0; //버튼 누른 횟수
-    private TextView countTextView; //버튼 누른 횟수 표기
-    private int cellSize; //미로 셀의 크기
-    private int mazeSize = 1000; //미로 전체 크기
+    private ImageView characterImageView; // Character image
+    private int buttonCount = 0; // Number of button presses
+    private TextView countTextView; // Displays button press count
+    private int cellSize; // Size of maze cells
+    private int mazeSize = 1000; // Total size of the maze
     private MazeView mazeView;
+    private ArrayList<int[]> shortestPath; // To store the shortest path
 
 
-    // 사용자가 원하는 크기로 미로 설정 가능하고
-    // DFS 기반(미로를 생성하면서 무작위로 벽과 길을 배치하지만, 캐릭터가 출구까지 도달할 수 있는 경로가 보장)으로
-    // 미로를 생성하는 메서드
+    // Allows the user to set the maze to a desired size
+    // Generates a maze using DFS (randomly places walls and paths while ensuring a path to the exit)
     public void generateRandomMaze(int rows, int cols) {
         Random random = new Random();
         maze = new int[rows][cols];
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                maze[i][j] = 1; // 모든 셀을 벽으로 초기화
+                maze[i][j] = 1; // Initialize all cells as walls
             }
         }
 
         exitRow = rows - 2;
         exitCol = cols - 2;
 
-        // DFS를 사용하여 랜덤하게 미로를 생성
+        // Generate the maze randomly using DFS
         dfsGenerate(1, 1);
 
-        // 입구와 출구를 길로 설정
-        maze[1][1] = 0; // 입구
-        maze[exitRow][exitCol] = 0; // 출구
+        // Set entrance and exit as paths
+        maze[1][1] = 0; // Entrance
+        maze[exitRow][exitCol] = 0; // Exit
     }
 
     private void dfsGenerate(int row, int col) {
-        maze[row][col] = 0; // 현재 위치를 길로 만듦
+        maze[row][col] = 0; // Make the current position a path
 
-        // 랜덤한 방향 순서로 이동하기 위해 방향 리스트를 만듦
-        // List<int[]>는 int[] 타입 배열들을 담을 수 있는 리스트
+        // Create a list of directions in a random order to move
         List<int[]> directions = new ArrayList<>();
-        directions.add(new int[]{1, 0});  // 아래쪽 (행 증가, 열 그대로)
-        directions.add(new int[]{-1, 0}); // 위쪽 (행 감소, 열 그대로)
-        directions.add(new int[]{0, 1});  // 오른쪽 (행 그대로, 열 증가)
-        directions.add(new int[]{0, -1}); // 왼쪽 (행 그대로, 열 감소)
-        Collections.shuffle(directions);  // 방향을 랜덤하게 섞음
+        directions.add(new int[]{1, 0});  // Down
+        directions.add(new int[]{-1, 0}); // Up
+        directions.add(new int[]{0, 1});  // Right
+        directions.add(new int[]{0, -1}); // Left
+        Collections.shuffle(directions);  // Shuffle directions randomly
 
         for (int[] direction : directions) {
-            // direction[0]과 direction[1]은 해당 방향의 행, 열 이동을 나타냄
-            int newRow = row + direction[0] * 2; // 두 칸씩 이동
+            int newRow = row + direction[0] * 2; // Move by two cells
             int newCol = col + direction[1] * 2;
 
-            // 새로운 위치가 미로 범위 내에 있고, 아직 방문하지 않은 경우에만 이동
+            // Move only if the new position is within maze boundaries and has not been visited
             if (isInMaze(newRow, newCol) && maze[newRow][newCol] == 1) {
-                // 두 칸을 이동한 위치로 가기 전, 중간에 있는 벽(한 칸 떨어진 위치)을 허물어 길을 만듦
-                maze[row + direction[0]][col + direction[1]] = 0;
-                dfsGenerate(newRow, newCol); // 재귀적으로 DFS 호출
+                // Before moving two cells, break the wall (one cell away) to create a path
+                int wallRow = row + direction[0];
+                int wallCol = col + direction[1];
+
+                // Check if the wall is within maze boundaries and break the wall
+                if (isInMaze(wallRow, wallCol)) {
+                    maze[wallRow][wallCol] = 0; // Break the wall
+                }
+
+                // Recursive call
+                dfsGenerate(newRow, newCol);
             }
         }
     }
 
-    // 미로의 범위를 체크하는 메서드
-    // row, col > 0 조건으로 하는 이유는 미로의 외곽 부분을 벽으로 유지하기 위함 (모든 길은 미로 내부에서만)
+    // Method to check if a new position is within the maze boundaries
     private boolean isInMaze(int row, int col) {
-        return row > 0 && row < maze.length && col > 0 && col < maze[0].length;
+        return row >= 0 && row < maze.length && col >= 0 && col < maze[0].length;
     }
 
-    // BFS 알고리즘을 이용해 최단 경로 찾기
+    class Node {
+        int x, y, steps;
+        Node prev;
+
+        Node(int x, int y, int steps, Node prev) {
+            this.x = x;
+            this.y = y;
+            this.steps = steps;
+            this.prev = prev;
+        }
+    }
+
+    // Find the shortest path using the BFS algorithm
     private ArrayList<int[]> findShortestPath() {
-        int[][] directions = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
-        boolean[][] visited = new boolean[rows][cols]; // 미로의 각 위치에 대한 방문 여부
-        Queue<int[]> queue = new LinkedList<>(); // 각 셀의 위치를 큐에 넣어 순차적으로 탐색. FIFO
-        ArrayList<int[]> path = new ArrayList<>(); // 최단 경로를 저장하는 리스트
+        int[] dx = {-1, 1, 0, 0}; // Up, down, left, right
+        int[] dy = {0, 0, -1, 1};
+        int mazeRows = maze.length;  // Number of rows in the maze
+        int mazeCols = maze[0].length; // Number of columns in the maze
+        boolean[][] visited = new boolean[mazeRows][mazeCols]; // Array to check if visited
 
-        // 경로를 역추적하기 위한 부모 정보 저장
-        // (각 위치 (row, col)에 도달하기 직전 위치를 기록하여, 출구에 도달했을 때 역추적하여 최단 경로를 구성할 수 있게 함)
-        int[][] parent = new int[rows * cols][2];
-
-        queue.add(new int[]{characterRow, characterCol}); // 시작 위치 (characterRow, characterCol)
-        visited[characterRow][characterCol] = true;
+        Queue<Node> queue = new LinkedList<>(); // Initialize queue
+        queue.add(new Node(1, 1, 0, null)); // Modify here if needed
+        visited[1][1] = true; //
 
         while (!queue.isEmpty()) {
-            int[] current = queue.poll(); // 큐의 맨 앞에 있는 위치를 꺼내 현재 위치로 설정
-            int row = current[0];
-            int col = current[1];
+            Node current = queue.poll();
+            int x = current.x;
+            int y = current.y;
 
-            // 출구에 도달했을 경우
-            if (row == exitRow && col == exitCol) {
-                // 경로를 추적하여 저장
-                while (row != characterRow || col != characterCol) {
-                    path.add(0, new int[]{row, col}); // path 리스트 맨 앞에 현재 위치를 추가하여 최단 경로를 구성
-                    int index = row * cols + col; // 현재 위치 (row, col)을 1차원 배열 인덱스로 변환하기 위한 값. (cols: 미로의 크기)
-                    row = parent[index][0];
-                    col = parent[index][1];
+            // When the destination is reached
+            if (x == exitRow && y == exitCol) {
+                ArrayList<int[]> path = new ArrayList<>();
+
+                // Backtrack the path and store in ArrayList
+                while (current != null) {
+                    path.add(0, new int[]{current.x, current.y}); // Add in reverse order
+                    current = current.prev;
                 }
-                path.add(0, new int[]{characterRow, characterCol});
-                return path;
+
+                return path; // Return the path as ArrayList<int[]>
             }
 
-            // 네 방향으로 이동
-            for (int[] direction : directions) {
-                int newRow = row + direction[0];
-                int newCol = col + direction[1];
+            // Explore in four directions
+            for (int i = 0; i < 4; i++) {
+                int nx = x + dx[i];
+                int ny = y + dy[i];
 
-                if (newRow >= 0 && newRow < rows && newCol >= 0 && newCol < cols && maze[newRow][newCol] == 0 && !visited[newRow][newCol]) {
-                    visited[newRow][newCol] = true;
-                    queue.add(new int[]{newRow, newCol});
-                    // parent 배열의 인덱스 newRow * cols + newCol에 현재 위치 (row, col)을 저장하여,
-                    // 이동할 다음 위치의 부모가 현재 위치임을 기록
-                    parent[newRow * cols + newCol] = new int[]{row, col};
+                // Check if within maze, unvisited, and is a path
+                if (nx >= 0 && nx < mazeRows && ny >= 0 && ny < mazeCols && !visited[nx][ny] && maze[nx][ny] == 0) {
+                    visited[nx][ny] = true;
+                    Node nextNode = new Node(nx, ny, current.steps + 1, current);
+                    queue.add(nextNode);
                 }
             }
         }
-        return null; // 출구까지 경로가 없는 경우
+        // If no path is found
+        return null;
     }
 
     @Override
@@ -145,25 +161,25 @@ public class MazeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maze);
 
-        // Intent로 전달된 행과 열 값 가져오기
+        // Retrieve row and column values passed via Intent
         Intent intent = getIntent();
-        rows = intent.getIntExtra("rows", 10); // 기본값 10
-        cols = intent.getIntExtra("cols", 10); // 기본값 10
+        rows = intent.getIntExtra("rows", 10); // Default value is 10
+        cols = intent.getIntExtra("cols", 10); // Default value is 10
 
-        // 행과 열 값에 따라 미로 생성
+        // Generate maze based on row and column values
         generateRandomMaze(rows, cols);
 
-        cellSize = mazeSize / Math.max(rows, cols); //셀 크기 = 맵 크기 / max(행,열)
+        cellSize = mazeSize / Math.max(rows, cols); // Cell size = map size / max(row, col)
 
         MazeView mazeView = findViewById(R.id.MazeView);
-        mazeView.setMaze(maze); //미로 생성
-        mazeView.setCellSize(cellSize);  //미로 셀 크기 설정 (cellSize)를 인수로 받을 수 있게 수정
-        mazeView.setExitPosition(exitRow, exitCol); // 출구 위치 설정
+        mazeView.setMaze(maze); // Generate maze
+        mazeView.setCellSize(cellSize);  // Set maze cell size to accept cellSize as parameter
+        mazeView.setExitPosition(exitRow, exitCol); // Set exit position
 
         characterImageView = findViewById(R.id.character);
         countTextView = findViewById(R.id.button_count);
 
-        // 캐릭터 크기를 셀 크기에 맞추기
+        // Adjust character size to match cell size
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) characterImageView.getLayoutParams();
         layoutParams.width = cellSize;
         layoutParams.height = cellSize;
@@ -174,14 +190,14 @@ public class MazeActivity extends AppCompatActivity {
         Button leftButton = findViewById(R.id.btn_left);
         Button rightButton = findViewById(R.id.btn_right);
 
-        // 모든 버튼에 동일한 리스너 설정
+        // Set the same listener for all buttons
         View.OnClickListener buttonClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                buttonCount++; // 버튼 누른 횟수 증가
-                countTextView.setText(String.valueOf(buttonCount)); // TextView 업데이트
+                buttonCount++; // Increase button press count
+                countTextView.setText(String.valueOf(buttonCount)); // Update TextView
 
-                //어떤 버튼 눌렸는지 확인 후 캐릭터 위치 이동
+                // Check which button was pressed and move character
                 if (v == upButton) {
                     moveCharacter(characterRow - 1, characterCol);
                 } else if (v == downButton) {
@@ -194,7 +210,7 @@ public class MazeActivity extends AppCompatActivity {
             }
         };
 
-        //버튼과 리스너 연결
+        // Link buttons and listener
         upButton.setOnClickListener(buttonClickListener);
         downButton.setOnClickListener(buttonClickListener);
         leftButton.setOnClickListener(buttonClickListener);
@@ -205,66 +221,79 @@ public class MazeActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 ArrayList<int[]> shortestPath = findShortestPath();
-
+                // Log coordinates of shortest path in Logcat
                 if (shortestPath != null) {
-                    // 미로를 ArrayList 형태로 변환
+                    for (int[] coordinates : shortestPath) {
+                        Log.d("MazeActivity", "Path Coordinate: (" + coordinates[0] + ", " + coordinates[1] + ")");
+                    }
+                } else {
+                    Log.d("MazeActivity", "No path found.");
+                }
+                if (shortestPath != null) {
+                    // Convert maze to ArrayList format
                     ArrayList<ArrayList<Integer>> mazeList = new ArrayList<>();
-                    // maze의 각 행을 순회. 여기서 row는 maze의 특정 행을 가리킴
+                    // Traverse each row in maze. Here row refers to a specific row in maze
                     for (int[] row : maze) {
                         ArrayList<Integer> rowList = new ArrayList<>();
-                        // cell은 row 배열에 있는 각각의 int 값입니다.
+                        // cell refers to each int value in the row array.
                         for (int cell : row) {
                             rowList.add(cell);
                         }
                         mazeList.add(rowList);
                     }
 
+                    cellSize = mazeSize / Math.max(rows, cols);
                     Intent intent = new Intent(MazeActivity.this, SolutionActivity.class);
-                    intent.putExtra("maze", mazeList); // 미로 데이터 전달
-                    intent.putExtra("shortestPath", shortestPath); // 최단 경로 전달
+                    intent.putExtra("maze", mazeList); // Pass maze data
+                    intent.putExtra("shortestPath", shortestPath); // Pass shortest path
+                    intent.putExtra("mazeSize", mazeSize);
+                    intent.putExtra("rows", rows);
+                    intent.putExtra("cols", cols);
+                    intent.putExtra("exitRow", exitRow);
+                    intent.putExtra("exitCol", exitCol);
                     startActivity(intent);
                 } else {
-                    Toast.makeText(MazeActivity.this, "출구까지의 경로가 없습니다.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MazeActivity.this, "No path to the exit.", Toast.LENGTH_SHORT).show();
                 }
             }
         });
 
-        //캐릭터 초기 위치 조정(updateCharacterPosition();만 쓰면, 한 번 이동한 다음부터는 괜찮은데 초기 위치에서의 캐릭터 이미지 위치가 살짝 어긋남)
+        // Adjust initial character position (using updateCharacterPosition(); resolves initial slight misalignment of the character image at the starting position)
         characterImageView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
-                // 캐릭터가 셀 중앙에 위치하도록 초기 위치 설정
+                // Set initial position so character is centered in the cell
                 updateCharacterPosition();
 
-                // 리스너 제거 (한 번만 실행되도록)
+                // Remove listener (execute only once)
                 characterImageView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
             }
         });
     }
 
     private void moveCharacter(int newRow, int newCol) {
-        // 새로운 위치가 유효한지 체크 (미로 범위 안에 있는지 & 길(0)이 맞는지)
+        // Check if the new position is valid (within maze boundaries & is a path (0))
         if (newRow >= 0 && newRow < maze.length && newCol >= 0 && newCol < maze[0].length && maze[newRow][newCol] == 0) {
-            characterRow = newRow; // 위치 업데이트
+            characterRow = newRow; // Update position
             characterCol = newCol;
-            updateCharacterPosition(); // 캐릭터 위치 업데이트
+            updateCharacterPosition(); // Update character position
 
-            // 출구에 도달했는지 확인
+            // Check if the exit is reached
             if (characterRow == exitRow && characterCol == exitCol) {
-                Toast.makeText(this, "축하합니다! 출구에 도달했습니다!", Toast.LENGTH_LONG).show();
-                finish(); // 게임 종료
+                Toast.makeText(this, "Congratulations! You've reached the exit!", Toast.LENGTH_LONG).show();
+                finish(); // End game
             }
         } else {
-            Toast.makeText(this, "벽입니다!", Toast.LENGTH_SHORT).show(); // 벽일 경우 메시지 출력
+            Toast.makeText(this, "It's a wall!", Toast.LENGTH_SHORT).show(); // Show message if it's a wall
         }
     }
 
-    // x좌표는 오른쪽으로 갈수록 증가하며 y좌표는 아래쪽으로 갈수록 증가함
+    // x-coordinate increases as you move right, and y-coordinate increases as you move down
     private void updateCharacterPosition() {
-        // 캐릭터 이미지의 위치를 업데이트
+        // Update the position of the character image
         FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) characterImageView.getLayoutParams();
-        params.leftMargin = characterCol * cellSize + (cellSize / 2) - (characterImageView.getWidth() / 2); //캐릭터 x좌표를 셀 중앙으로
-        params.topMargin = characterRow * cellSize + (cellSize / 2) - (characterImageView.getHeight() / 2);; //캐릭터 y좌표를 셀 중앙으로
+        params.leftMargin = characterCol * cellSize + (cellSize / 2) - (characterImageView.getWidth() / 2); // Center character on x-axis in the cell
+        params.topMargin = characterRow * cellSize + (cellSize / 2) - (characterImageView.getHeight() / 2); // Center character on y-axis in the cell
         characterImageView.setLayoutParams(params);
     }
 }
