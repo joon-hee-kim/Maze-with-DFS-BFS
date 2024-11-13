@@ -9,6 +9,7 @@ This project allows us to deepen our understanding of these algorithms through h
 ## Project Structure
 
 For simplicity, We have implemented class diagrams with class names only. </br>
+![image](https://github.com/user-attachments/assets/f156158c-de9a-4f84-9108-a6d63d842661) </br>
 
 1. MainActivity.java: </br>
 -  MainActivity serves as the start screen, providing a button that navigates to UserInputActivity.</br>
@@ -29,16 +30,14 @@ For simplicity, We have implemented class diagrams with class names only. </br>
 ## Output
 * **Demo Video** (**A little loading!**) </br>
 
-https://github.com/user-attachments/assets/6fc0caf9-5ea2-4645-97f3-663c79fb153f
-
-
-* **Photo** </br>
+https://github.com/user-attachments/assets/6fc0caf9-5ea2-4645-97f3-663c79fb153f </br>
 
 ## 👥 Team Member
 201934219 Kim Joonhee </br>
-202132289 jaewon chong </br>
-2021</br>
-2021</br>
+202135527 Kim Hyoshin </br>
+202132289 Chong Jaewon </br>
+202135596 Hyeon Gwan</br>
+
  
 ## ✔️ Source
-* ChatGPT </br>
+* ChatGPT </br>
