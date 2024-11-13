@@ -30,7 +30,9 @@ For simplicity, We have implemented class diagrams with class names only. </br>
 ## Output
 * **Demo Video** (**A little loading!**) </br>
 
-https://github.com/user-attachments/assets/6fc0caf9-5ea2-4645-97f3-663c79fb153f </br>
+https://github.com/user-attachments/assets/d75e8bc5-450a-4441-87d1-1c58862c4d72 
+
+</br>
 
 ## 👥 Team Member
 201934219 Kim Joonhee </br>
