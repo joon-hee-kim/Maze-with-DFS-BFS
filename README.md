@@ -3,7 +3,7 @@ This is the result of maze game app with DFS and BFS algorithm.
 
 
 ## Motivation
-We developed this maze game app to apply graph theory concepts from our algorithm class, specifically Depth-First Search (DFS) and Breadth-First Search (BFS). 
+We developed this maze game app to apply graph and back-tracking theory concepts from our algorithm class, specifically Depth-First Search (DFS) and Breadth-First Search (BFS). 
 This project allows us to deepen our understanding of these algorithms through hands-on implementation.
 
 ## Project Structure
